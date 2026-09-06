@@ -1,3 +1,4 @@
+'use client'
 import { ArrowRight, Check, ChevronRight, CircleCheck, Lightbulb, MessageCircle, Sparkles, UsersRound } from 'lucide-react'
 
 const highlights = [
