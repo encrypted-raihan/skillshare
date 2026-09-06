@@ -1,2 +1,5 @@
-import { MessagesPage } from '@/components/messages-page'
-export default function Page(){return <MessagesPage/>}
+import { WhatsAppMessagesPage } from '@/components/whatsapp-messages-page'
+
+export default function Page() {
+  return <WhatsAppMessagesPage />
+}
