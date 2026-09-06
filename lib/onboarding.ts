@@ -1,5 +1,6 @@
 export const ONBOARDING_DRAFT_KEY = 'skillswap:onboarding-draft:v1'
 export const ONBOARDING_SECRET_KEY = 'skillswap:onboarding-password:v1'
+export const ONBOARDING_PENDING_AVATAR_KEY = 'skillswap:onboarding-avatar:v1'
 
 export type OnboardingDraft = {
   accountEmail: string
@@ -31,7 +32,9 @@ export function readDraft(): OnboardingDraft {
       phoneNumber: typeof parsed.phoneNumber === 'string' ? parsed.phoneNumber : '',
       dateOfBirth: typeof parsed.dateOfBirth === 'string' ? parsed.dateOfBirth : '',
       bio: typeof parsed.bio === 'string' ? parsed.bio : '',
-      offeredSkills: Array.isArray(parsed.offeredSkills) ? parsed.offeredSkills.filter((v): v is string => typeof v === 'string') : [],
+      offeredSkills: Array.isArray(parsed.offeredSkills)
+        ? parsed.offeredSkills.filter((v): v is string => typeof v === 'string')
+        : [],
     }
   } catch {
     return emptyOnboardingDraft
@@ -51,7 +54,27 @@ export function writeTemporaryPassword(password: string) {
   window.sessionStorage.setItem(ONBOARDING_SECRET_KEY, password)
 }
 
+export function readPendingAvatar() {
+  if (typeof window === 'undefined') return ''
+  return window.sessionStorage.getItem(ONBOARDING_PENDING_AVATAR_KEY) ?? ''
+}
+
+export function writePendingAvatar(dataUrl: string) {
+  if (typeof window === 'undefined') return
+  if (!dataUrl) {
+    window.sessionStorage.removeItem(ONBOARDING_PENDING_AVATAR_KEY)
+    return
+  }
+  window.sessionStorage.setItem(ONBOARDING_PENDING_AVATAR_KEY, dataUrl)
+}
+
+export function clearPendingAvatar() {
+  if (typeof window === 'undefined') return
+  window.sessionStorage.removeItem(ONBOARDING_PENDING_AVATAR_KEY)
+}
+
 export function clearOnboardingStorage() {
   window.sessionStorage.removeItem(ONBOARDING_DRAFT_KEY)
   window.sessionStorage.removeItem(ONBOARDING_SECRET_KEY)
+  window.sessionStorage.removeItem(ONBOARDING_PENDING_AVATAR_KEY)
 }
