@@ -25,6 +25,68 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { isJwtIssuedAtFutureError, sleep } from '@/lib/supabase/retry'
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  tech: [
+    'programming',
+    'coding',
+    'javascript',
+    'typescript',
+    'python',
+    'java',
+    'react',
+    'next.js',
+    'nextjs',
+    'flutter',
+    'web development',
+    'app development',
+    'software',
+    'data science',
+    'machine learning',
+    'ai',
+  ],
+  design: [
+    'ui',
+    'ux',
+    'ui design',
+    'ux design',
+    'graphic design',
+    'figma',
+    'illustration',
+    'photoshop',
+    'video editing',
+  ],
+  business: [
+    'business',
+    'marketing',
+    'digital marketing',
+    'sales',
+    'entrepreneurship',
+    'finance',
+    'startup',
+    'management',
+  ],
+  languages: [
+    'english',
+    'hindi',
+    'malayalam',
+    'arabic',
+    'french',
+    'german',
+    'spanish',
+    'language',
+  ],
+  creative: [
+    'music',
+    'singing',
+    'guitar',
+    'piano',
+    'photography',
+    'drawing',
+    'painting',
+    'writing',
+    'cooking',
+  ],
+}
 
 type Profile = {
   id: string
