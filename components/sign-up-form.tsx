@@ -1,120 +1,156 @@
-"use client";
+ 'use client'
 
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import Link from 'next/link'
+import { ArrowRight, Check, LockKeyhole, Mail, Sparkles } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { PasswordField } from './password-field'
 
-export function SignUpForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+type DraftAccount = {
+  email: string
+  password: string
+}
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+const DRAFT_KEY = 'skillswap.signup.account'
 
-    if (password !== repeatPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
+export function SignUpForm() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error, setError] = useState('')
 
+  useEffect(() => {
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
-        },
-      });
-      if (error) throw error;
-      router.push("/auth/sign-up-success");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
+      const saved = sessionStorage.getItem(DRAFT_KEY)
+      if (!saved) return
+      const draft = JSON.parse(saved) as Partial<DraftAccount>
+      if (typeof draft.email === 'string') setEmail(draft.email)
+      if (typeof draft.password === 'string') setPassword(draft.password)
+    } catch {
+      sessionStorage.removeItem(DRAFT_KEY)
     }
-  };
+  }, [])
+
+  function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+
+    if (password.length < 8) {
+      setError('Use a password with at least 8 characters.')
+      return
+    }
+    if (password !== confirmPassword) {
+      setError('The passwords do not match.')
+      return
+    }
+
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail) {
+      setError('Enter your email address to continue.')
+      return
+    }
+
+    const draft: DraftAccount = { email: normalizedEmail, password }
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+    } catch {
+      setError('Your browser is blocking session storage. Please allow site storage and try again.')
+      return
+    }
+
+    window.location.assign('/onboarding/profile')
+  }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
-              </Button>
+    <main className="premium-auth-page">
+      <div className="premium-auth-wrap">
+        <a className="premium-top-brand" href="/">
+          <span className="premium-brand-mark"><Sparkles size={15} /></span>
+          <span>SkillSwap</span>
+        </a>
+
+        <section className="premium-single-card signup-card">
+          <div className="premium-visual premium-visual-signup">
+            <div className="premium-visual-glow" />
+            <img
+              className="premium-illustration"
+              src="/onboarding/1.webp"
+              alt=""
+              width={520}
+              height={390}
+              fetchPriority="high"
+            />
+            <div className="premium-orbit premium-orbit-a" />
+            <div className="premium-orbit premium-orbit-b" />
+          </div>
+
+          <div className="premium-content">
+            <div className="premium-progress-row">
+              <div className="premium-progress"><span style={{ width: '33%' }} /></div>
+              <span>01 / 03</span>
             </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
-              </Link>
+
+            <div className="premium-copy">
+              <p className="premium-eyebrow">START YOUR JOURNEY</p>
+              <h1>Create your account.</h1>
+              <p className="premium-description">
+                A small first step. We'll build your profile together before you meet the SkillSwap community.
+              </p>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+
+            <form className="premium-form" onSubmit={submit}>
+              <label className="premium-field-wrap">
+                <span className="premium-field-label">Email address</span>
+                <div className="premium-input-shell">
+                  <Mail size={16} aria-hidden />
+                  <input
+                    className="premium-field"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                  />
+                </div>
+              </label>
+
+              <PasswordField value={password} onChange={setPassword} />
+
+              <label className="premium-field-wrap">
+                <span className="premium-field-label">Confirm password</span>
+                <div className="premium-input-shell">
+                  <LockKeyhole size={16} aria-hidden />
+                  <input
+                    className="premium-field"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat your password"
+                    minLength={8}
+                    required
+                  />
+                </div>
+              </label>
+
+              {error && <div className="premium-error" role="alert">{error}</div>}
+
+              <button className="premium-primary" type="submit">
+                Continue <ArrowRight size={17} />
+              </button>
+            </form>
+
+            <div className="premium-footer-row">
+              <span>Already have an account?</span>
+              <Link className="premium-link" href="/auth/login">Sign in</Link>
+            </div>
+          </div>
+        </section>
+
+        <p className="premium-footnote">Your account is created only after you complete onboarding.</p>
+      </div>
+    </main>
+  )
 }
+
+export { DRAFT_KEY }

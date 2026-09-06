@@ -1,78 +1,61 @@
-"use client";
+ 'use client'
 
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { ArrowRight, Loader2, LockKeyhole } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-export function UpdatePasswordForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+export function UpdatePasswordForm() {
+  const router = useRouter()
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [done, setDone] = useState(false)
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setError('')
+    if (password.length < 8) return setError('Use a password with at least 8 characters.')
+    if (password !== confirm) return setError('The passwords do not match.')
 
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    setBusy(true)
+    const { error: updateError } = await createClient().auth.updateUser({ password })
+    if (updateError) setError(updateError.message)
+    else setDone(true)
+    setBusy(false)
+  }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-          <CardDescription>
-            Please enter your new password below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleForgotPassword}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="password">New password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="New password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Saving..." : "Save new password"}
-              </Button>
-            </div>
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="icon-box"><LockKeyhole size={20} /></div>
+        <p className="eyebrow" style={{ marginTop: 24 }}>NEW PASSWORD</p>
+        <h1>Choose a new password.</h1>
+        {done ? (
+          <div className="form">
+            <div className="notice info">Your password has been updated successfully.</div>
+            <button className="button-primary" onClick={() => router.replace('/auth/login')}>
+              Continue to sign in <ArrowRight size={16} />
+            </button>
+          </div>
+        ) : (
+          <form className="form" onSubmit={submit}>
+            <label className="field-wrap">
+              <span className="field-label">New password</span>
+              <input className="field" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </label>
+            <label className="field-wrap">
+              <span className="field-label">Confirm password</span>
+              <input className="field" type="password" autoComplete="new-password" minLength={8} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+            </label>
+            {error && <div className="notice error" role="alert">{error}</div>}
+            <button className="button-primary" disabled={busy}>
+              {busy ? <><Loader2 size={16} /> Saving…</> : <>Update password <ArrowRight size={16} /></>}
+            </button>
           </form>
-        </CardContent>
-      </Card>
-    </div>
-  );
+        )}
+      </section>
+    </main>
+  )
 }

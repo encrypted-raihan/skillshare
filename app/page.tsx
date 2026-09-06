@@ -1,58 +1,102 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
-import { Suspense } from "react";
+import { ArrowRight, Check, Sparkles, UsersRound } from 'lucide-react'
 
-export default function Home() {
+const highlights = [
+  'Learn directly from real people',
+  'Share practical skills you already know',
+  'Build useful connections, not follower counts',
+]
+
+export default function HomePage() {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
+    <main className="landing-page">
+      <nav className="landing-nav" aria-label="Primary navigation">
+        <a className="landing-logo" href="/" aria-label="SkillSwap home">
+          <img src="/onboarding/logo.webp" alt="SkillSwap" />
+          <span>SkillSwap</span>
+        </a>
+
+        <div className="landing-nav-links">
+          <a href="#how-it-works">How it works</a>
+          <a href="#why-skillswap">Why SkillSwap</a>
         </div>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
+        <div className="landing-nav-actions">
+          <a className="landing-signin" href="/auth/login">Sign in</a>
+          <a className="landing-nav-cta" href="/auth/sign-up">Get started <ArrowRight size={15} /></a>
+        </div>
+      </nav>
+
+      <section className="landing-hero">
+        <div className="landing-hero-copy">
+          <div className="landing-kicker"><span /> LEARN · TEACH · GROW</div>
+          <h1>Learn something.<br /><em>Teach something.</em></h1>
+          <p className="landing-lede">
+            SkillSwap makes it easy to trade practical skills with people who have something useful to teach you too.
           </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
+
+          <div className="landing-actions">
+            <a className="landing-primary" href="/auth/sign-up">Create your account <ArrowRight size={18} /></a>
+            <a className="landing-secondary" href="/auth/login">Sign in</a>
+          </div>
+
+          <div className="landing-trust">
+            <UsersRound size={17} />
+            <span>Start with a profile. Meet the community once you're ready.</span>
+          </div>
+
+          <div className="landing-highlights">
+            {highlights.map((item) => (
+              <div key={item}><span className="landing-check"><Check size={12} /></span>{item}</div>
+            ))}
+          </div>
+        </div>
+
+        <div className="landing-visual" aria-label="SkillSwap community preview">
+          <div className="landing-visual-orb landing-orb-one" />
+          <div className="landing-visual-orb landing-orb-two" />
+          <div className="landing-image-main">
+            <img src="/onboarding/4.webp" alt="SkillSwap learning illustration" />
+          </div>
+          <div className="landing-image-secondary">
+            <img src="/onboarding/5.webp" alt="SkillSwap community illustration" />
+          </div>
+          <div className="landing-float-card landing-float-top">
+            <span className="landing-float-icon"><Sparkles size={14} /></span>
+            <div><strong>Swap a skill</strong><small>Find someone who can teach you.</small></div>
+          </div>
+          <div className="landing-float-card landing-float-bottom">
+            <span className="landing-avatar-dot">S</span>
+            <div><strong>Real people, real skills.</strong><small>Learn by doing together.</small></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-proof" id="why-skillswap">
+        <div>
+          <p className="landing-section-kicker">A BETTER KIND OF NETWORK</p>
+          <h2>Less scrolling.<br />More learning.</h2>
+        </div>
+        <p>
+          No endless feeds to optimize. No pressure to collect followers. Just people, practical skills, and a reason to start a conversation.
+        </p>
+      </section>
+
+      <section className="landing-how" id="how-it-works">
+        <div className="landing-how-heading">
+          <p className="landing-section-kicker">HOW IT WORKS</p>
+          <h2>Simple by design.</h2>
+        </div>
+        <div className="landing-step-grid">
+          <article><span>01</span><h3>Build your profile</h3><p>Tell the community what you know and what you want to learn.</p></article>
+          <article><span>02</span><h3>Find the right person</h3><p>Explore people whose skills line up with your goals.</p></article>
+          <article><span>03</span><h3>Start the swap</h3><p>Send a request and turn a shared interest into a real exchange.</p></article>
+        </div>
+      </section>
+
+      <footer className="landing-footer">
+        <span>SkillSwap</span>
+        <span>Learn · Teach · Grow</span>
+      </footer>
     </main>
-  );
+  )
 }

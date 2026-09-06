@@ -1,105 +1,70 @@
-"use client";
+'use client'
 
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useState } from "react";
+import Link from 'next/link'
+import { ArrowLeft, ArrowRight, Loader2, MailCheck } from 'lucide-react'
+import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
-export function ForgotPasswordForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+export function ForgotPasswordForm() {
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    const origin = window.location.origin
 
-    try {
-      // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
-      });
-      if (error) throw error;
-      setSuccess(true);
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const { error: resetError } = await createClient().auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
+    })
+
+    if (resetError) setError(resetError.message)
+    else setSent(true)
+    setBusy(false)
+  }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      {success ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
-            <CardDescription>Password reset instructions sent</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              If you registered using your email and password, you will receive
-              a password reset email.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-            <CardDescription>
-              Type in your email and we&apos;ll send you a link to reset your
-              password
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleForgotPassword}>
-              <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Sending..." : "Send reset email"}
-                </Button>
-              </div>
-              <div className="mt-4 text-center text-sm">
-                Already have an account?{" "}
-                <Link
-                  href="/auth/login"
-                  className="underline underline-offset-4"
-                >
-                  Login
-                </Link>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="icon-box"><MailCheck size={20} /></div>
+        <p className="eyebrow" style={{ marginTop: 24 }}>RESET ACCESS</p>
+        <h1>Forgot your password?</h1>
+        <p className="subtext">Enter your email and we’ll send you a secure reset link.</p>
+
+        {sent ? (
+          <div className="form">
+            <div className="notice info">
+              Check your inbox for the reset link. The link will return you to SkillSwap so you can choose a new password.
+            </div>
+            <Link href="/auth/login" className="button-primary">Back to sign in <ArrowRight size={16} /></Link>
+          </div>
+        ) : (
+          <form className="form" onSubmit={submit}>
+            <label className="field-wrap">
+              <span className="field-label">Email address</span>
+              <input
+                className="field"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+            {error && <div className="notice error" role="alert">{error}</div>}
+            <div className="inline-row">
+              <Link href="/auth/login" className="button-secondary"><ArrowLeft size={16} /> Back</Link>
+              <button className="button-primary" type="submit" disabled={busy}>
+                {busy ? <><Loader2 size={16} /> Sending…</> : <>Send link <ArrowRight size={16} /></>}
+              </button>
+            </div>
+          </form>
+        )}
+      </section>
+    </main>
+  )
 }
