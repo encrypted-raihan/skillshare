@@ -3,8 +3,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { clearOnboardingStorage, readDraft, readTemporaryPassword, writeDraft, type OnboardingDraft } from '@/lib/onboarding'
+import { clearAllOnboardingStorage, clearOnboardingStorage, readDraft, readPendingAvatar, readTemporaryPassword, writeDraft, type OnboardingDraft } from '@/lib/onboarding'
 import '../onboarding.css'
+
+async function finalizePendingAvatar(supabase: ReturnType<typeof createClient>, userId: string) {
+  const dataUrl = readPendingAvatar()
+  if (!dataUrl) return true
+  const comma = dataUrl.indexOf(',')
+  if (comma === -1) return false
+  const mime = dataUrl.slice(5, dataUrl.indexOf(';')) || 'image/jpeg'
+  const base64 = dataUrl.slice(comma + 1)
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+  const blob = new Blob([bytes], { type: mime })
+  const path = `${userId}/avatar`
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(path, blob, { cacheControl: '3600', upsert: true, contentType: mime })
+  if (uploadError) throw uploadError
+
+  const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(path)
+  const avatarUrl = `${publicData.publicUrl}?v=${Date.now()}`
+  const { error: profileError } = await supabase.from('profiles').update({ avatar_url: avatarUrl }).eq('id', userId)
+  if (profileError) throw profileError
+  return true
+}
 
 export default function SkillsOnboardingPage() {
   const [draft, setDraft] = useState<OnboardingDraft | null>(null)
@@ -73,9 +98,19 @@ export default function SkillsOnboardingPage() {
       if (signUpError) throw signUpError
       if (!data.user) throw new Error('Supabase did not return a user. Please try again.')
 
-      clearOnboardingStorage()
-      if (data.session) window.location.assign('/explore')
-      else window.location.assign('/auth/confirmed')
+      if (data.session) {
+        try {
+          await finalizePendingAvatar(supabase, data.user.id)
+          clearAllOnboardingStorage()
+        } catch {
+          // The photo is optional. Never block account creation because an avatar upload failed.
+          clearOnboardingStorage()
+        }
+        window.location.assign('/explore')
+      } else {
+        clearOnboardingStorage()
+        window.location.assign('/auth/confirmed')
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'We could not finish creating your account.')
       setBusy(false)
