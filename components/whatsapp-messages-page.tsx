@@ -115,6 +115,7 @@ export function WhatsAppMessagesPage() {
   }
 
   async function loadConvos() {
+    setError('')
     const { data: auth } = await supabase.auth.getUser()
     if (!auth.user) {
       location.assign('/auth/login?next=/messages')
@@ -174,7 +175,10 @@ export function WhatsAppMessagesPage() {
     }
 
     setMessages(await hydrate((data || []) as Message[]))
-    await supabase.rpc('mark_conversation_read', { conversation_id: conversationId })
+    const { error: readError } = await supabase.rpc('mark_conversation_read', { conversation_id: conversationId })
+    if (readError && !readError.message.toLowerCase().includes('function')) {
+      setError(readError.message)
+    }
   }
 
   useEffect(() => {
@@ -254,7 +258,8 @@ export function WhatsAppMessagesPage() {
       return false
     }
 
-    setMessages((previous) => [...previous, ...(await hydrate([data as Message]))])
+    const hydrated = await hydrate([data as Message])
+    setMessages((previous) => [...previous, ...hydrated])
     return true
   }
 
@@ -286,7 +291,7 @@ export function WhatsAppMessagesPage() {
 
       if (uploadResult.error) throw uploadResult.error
 
-      await insertMessage({
+      const sent = await insertMessage({
         content: '',
         message_type: messageType,
         media_path: path,
@@ -294,6 +299,9 @@ export function WhatsAppMessagesPage() {
         media_size: file.size,
         mime_type: file.type,
       })
+      if (!sent) {
+        await supabase.storage.from('message-media').remove([path])
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Attachment failed.')
     } finally {
@@ -308,7 +316,7 @@ export function WhatsAppMessagesPage() {
       return
     }
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+    void navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
       streamRef.current = stream
       const recorder = new MediaRecorder(stream)
       const chunks: BlobPart[] = []
@@ -336,7 +344,7 @@ export function WhatsAppMessagesPage() {
 
           if (uploadResult.error) throw uploadResult.error
 
-          await insertMessage({
+          const sent = await insertMessage({
             content: '',
             message_type: 'audio',
             media_path: path,
@@ -345,6 +353,9 @@ export function WhatsAppMessagesPage() {
             mime_type: blob.type,
             duration_ms: elapsed,
           })
+          if (!sent) {
+            await supabase.storage.from('message-media').remove([path])
+          }
         } catch (cause) {
           setError(cause instanceof Error ? cause.message : 'Voice message failed.')
         } finally {
@@ -366,6 +377,7 @@ export function WhatsAppMessagesPage() {
   }
 
   function stopRecording() {
+    if (timerRef.current) clearInterval(timerRef.current)
     recorderRef.current?.stop()
     recorderRef.current = null
   }
@@ -449,32 +461,28 @@ export function WhatsAppMessagesPage() {
                 <input className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search chats" />
               </label>
             </div>
-
             <div className="h-[calc(100%-122px)] overflow-y-auto p-2">
               {loading ? (
                 <div className="grid place-items-center py-16 text-slate-400"><LoaderCircle className="animate-spin" size={22} /></div>
               ) : filtered.length === 0 ? (
                 <div className="px-6 py-16 text-center text-sm text-slate-500">
-                  No conversations yet.
-                  <br />
-                  <a className="font-bold text-emerald-700" href="/requests">Accept a swap request to start one.</a>
+                  <p>No conversations yet.</p>
+                  <a className="mt-1 block font-bold text-emerald-700" href="/requests">Accept a swap request to start one.</a>
                 </div>
-              ) : filtered.map((conversation) => (
-                <button
-                  key={conversation.id}
-                  onClick={() => { setSelected(conversation.id); setMobileList(false) }}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${selected === conversation.id ? 'bg-emerald-50 shadow-sm' : 'hover:bg-slate-50'}`}
-                >
-                  <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-emerald-100 text-sm font-black text-emerald-800">
-                    {conversation.other?.avatar_url ? <img src={conversation.other.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(conversation.other?.full_name || 'S')}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <b className="block truncate text-sm text-slate-900">{conversation.other?.full_name || 'SkillSwap member'}</b>
-                    <small className="mt-0.5 block truncate text-xs text-slate-500">Conversation</small>
-                  </span>
-                  <time className="text-[10px] text-slate-400">{time(conversation.updated_at || conversation.created_at)}</time>
-                </button>
-              ))}
+              ) : (
+                filtered.map((conversation) => (
+                  <button key={conversation.id} onClick={() => { setSelected(conversation.id); setMobileList(false) }} className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition ${selected === conversation.id ? 'bg-emerald-50 shadow-sm' : 'hover:bg-slate-50'}`}>
+                    <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-emerald-100 text-sm font-black text-emerald-800">
+                      {conversation.other?.avatar_url ? <img src={conversation.other.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(conversation.other?.full_name || 'SkillSwap member')}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <b className="block truncate text-sm text-slate-900">{conversation.other?.full_name || 'SkillSwap member'}</b>
+                      <small className="mt-0.5 block truncate text-xs text-slate-500">SkillSwap connection</small>
+                    </span>
+                    <time className="text-[10px] text-slate-400">{time(conversation.updated_at || conversation.created_at)}</time>
+                  </button>
+                ))
+              )}
             </div>
           </aside>
 
@@ -487,17 +495,13 @@ export function WhatsAppMessagesPage() {
                     <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-emerald-100 font-black text-emerald-800">
                       {other.avatar_url ? <img src={other.avatar_url} alt="" className="h-full w-full object-cover" /> : initials(other.full_name)}
                     </span>
-                    <span className="min-w-0">
-                      <b className="block truncate text-[15px] text-slate-900">{other.full_name}</b>
-                      <small className="text-xs text-emerald-700">SkillSwap connection</small>
-                    </span>
+                    <span className="min-w-0"><b className="block truncate text-[15px] text-slate-900">{other.full_name}</b><small className="text-xs text-emerald-700">SkillSwap connection</small></span>
                   </button>
                   <button className="ml-auto grid h-9 w-9 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" onClick={() => location.assign(`/people/${other.id}`)}><UserRound size={17} /></button>
                 </header>
 
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[radial-gradient(circle_at_top_left,rgba(221,242,231,.55),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(236,229,207,.35),transparent_30%)] px-4 py-5 sm:px-7">
                   <div className="mx-auto mb-6 rounded-full bg-white/75 px-4 py-2 text-[8px] font-bold tracking-[.17em] text-slate-400 shadow-sm">MESSAGES ARE ENCRYPTED BETWEEN YOU</div>
-
                   {messages.length === 0 ? (
                     <div className="m-auto max-w-sm text-center text-slate-400">
                       <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-white/80 text-emerald-700 shadow-sm">✦</div>
@@ -510,30 +514,16 @@ export function WhatsAppMessagesPage() {
                         const mine = message.sender_id === userId
                         return (
                           <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                            <div
-                              className={`group relative max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'rounded-br-md bg-[#d9fdd3] text-slate-800' : 'rounded-bl-md bg-white text-slate-800'}`}
-                              onContextMenu={(event) => { event.preventDefault(); setMenu(message.id) }}
-                            >
+                            <div className={`group relative max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'rounded-br-md bg-[#d9fdd3] text-slate-800' : 'rounded-bl-md bg-white text-slate-800'}`} onContextMenu={(event) => { event.preventDefault(); setMenu(message.id) }}>
                               {renderBody(message)}
                               <div className="mt-1 flex items-center justify-end gap-1 text-[9px] text-slate-500">
                                 <span>{time(message.created_at)}</span>
-                                {mine && !message.deleted_at ? (
-                                  <span className={message.read_at ? 'text-sky-500' : 'text-slate-400'}>
-                                    <Check size={11} className="inline -mr-1" /><Check size={11} className="inline" />
-                                  </span>
-                                ) : null}
+                                {mine && <span className={message.read_at ? 'text-sky-500' : 'text-slate-400'}><Check size={11} className="inline -mr-1" /><Check size={11} className="inline" /></span>}
                               </div>
-
                               {menu === message.id ? (
-                                <div className={`absolute z-20 top-full mt-1 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl ${mine ? 'right-0' : 'left-0'}`}>
-                                  <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold hover:bg-slate-50" onClick={() => void deleteMessage(message, false)}>
-                                    <Trash2 size={14} /> Delete for me
-                                  </button>
-                                  {mine && !message.deleted_at ? (
-                                    <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50" onClick={() => void deleteMessage(message, true)}>
-                                      <Trash2 size={14} /> Delete for everyone
-                                    </button>
-                                  ) : null}
+                                <div className={`absolute z-20 top-full mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl ${mine ? 'right-0' : 'left-0'}`}>
+                                  <button onClick={() => void deleteMessage(message, false)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50"><Trash2 size={13} /> Delete for me</button>
+                                  {mine && <button onClick={() => void deleteMessage(message, true)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50"><Trash2 size={13} /> Delete for everyone</button>}
                                 </div>
                               ) : null}
                             </div>
@@ -545,41 +535,44 @@ export function WhatsAppMessagesPage() {
                   )}
                 </div>
 
-                {error ? <div className="border-t border-red-100 bg-red-50 px-4 py-2 text-xs text-red-600">{error}</div> : null}
+                {error ? <div className="mx-4 mb-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 sm:mx-6">{error}</div> : null}
 
-                <div className="relative border-t border-slate-200/70 bg-white/85 p-3 sm:p-4">
+                <div className="border-t border-slate-200/70 bg-white/85 p-3 sm:p-4">
                   {recording ? (
-                    <div className="flex h-[72px] items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4">
-                      <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-                      <span className="flex-1 text-sm font-semibold text-red-700">Recording voice message · {duration(recordingMs)}</span>
-                      <button className="grid h-10 w-10 place-items-center rounded-xl bg-red-600 text-white" onClick={stopRecording}><X size={18} /></button>
+                    <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+                      <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+                      <span className="text-sm font-bold text-red-700">Recording {duration(recordingMs)}</span>
+                      <button onClick={stopRecording} className="ml-auto rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Stop & send</button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <input ref={fileRef} type="file" className="hidden" accept="image/*,.pdf,.doc,.docx,.txt,.zip" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file) }} />
-                      <button disabled={busy} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-slate-500 hover:bg-slate-100 disabled:opacity-50" onClick={() => fileRef.current?.click()}><Paperclip size={19} /></button>
-                      <button disabled={busy} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-slate-500 hover:bg-slate-100 disabled:opacity-50" onClick={startRecording}><Mic size={19} /></button>
-                      <input ref={inputRef} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() } }} className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100" placeholder="Type a message" />
-                      <button disabled={busy || !text.trim()} className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 disabled:opacity-40" onClick={() => void send()}><Send size={18} /></button>
+                    <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-2 shadow-inner">
+                      <button disabled={busy} onClick={() => fileRef.current?.click()} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 hover:bg-white disabled:opacity-50"><Paperclip size={19} /></button>
+                      <input ref={fileRef} type="file" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.ppt,.pptx,.xls,.xlsx" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file) }} />
+                      <input ref={inputRef} value={text} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() } }} placeholder="Write a message..." className="min-w-0 flex-1 bg-transparent px-2 text-sm text-slate-800 outline-none placeholder:text-slate-400" disabled={busy} />
+                      {text.trim() ? (
+                        <button disabled={busy} onClick={() => void send()} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-emerald-700 text-white hover:bg-emerald-800 disabled:opacity-50"><Send size={17} /></button>
+                      ) : (
+                        <button disabled={busy} onClick={startRecording} className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-slate-500 hover:bg-white disabled:opacity-50"><Mic size={19} /></button>
+                      )}
                     </div>
                   )}
                 </div>
               </>
             ) : (
-              <div className="grid h-full place-items-center p-10 text-center">
-                <div><div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-emerald-50 text-emerald-700"><ImageIcon size={24} /></div><h2 className="mt-4 text-xl font-black text-slate-900">Your conversations</h2><p className="mt-1 max-w-sm text-sm text-slate-500">Accept a SkillSwap request to start chatting.</p></div>
+              <div className="grid h-full place-items-center text-center text-slate-400">
+                <div><div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-white/80 text-emerald-700 shadow-sm"><ImageIcon size={28} /></div><p className="mt-4 text-sm">Select a conversation to start chatting.</p></div>
               </div>
             )}
           </section>
         </section>
-      </main>
 
-      {lightbox ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-5" onClick={() => setLightbox('')}>
-          <button className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white" onClick={() => setLightbox('')}><X size={20} /></button>
-          <img src={lightbox} alt="Full size attachment" className="max-h-[90vh] max-w-[90vw] rounded-2xl object-contain" onClick={(event) => event.stopPropagation()} />
-        </div>
-      ) : null}
+        {lightbox ? (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/80 p-6" onClick={() => setLightbox('')}>
+            <button className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20" onClick={() => setLightbox('')}><X size={20} /></button>
+            <img src={lightbox} alt="Preview" className="max-h-[90vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl" onClick={(event) => event.stopPropagation()} />
+          </div>
+        ) : null}
+      </main>
     </div>
   )
 }
