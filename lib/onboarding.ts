@@ -74,7 +74,13 @@ export function clearPendingAvatar() {
 }
 
 export function clearOnboardingStorage() {
+  if (typeof window === 'undefined') return
   window.sessionStorage.removeItem(ONBOARDING_DRAFT_KEY)
   window.sessionStorage.removeItem(ONBOARDING_SECRET_KEY)
   window.sessionStorage.removeItem(ONBOARDING_PENDING_AVATAR_KEY)
+}
+
+// Backwards-compatible alias used by older onboarding screens.
+export function clearAllOnboardingStorage() {
+  clearOnboardingStorage()
 }
