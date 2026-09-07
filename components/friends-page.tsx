@@ -104,14 +104,14 @@ export function FriendsPage() {
 
         <section className="v1-card v1-card-pad">
           {loading ? (
-            <div className="v1-empty"><div><LoaderCircle className="spin" size={22} /><p>Loading your friends…</p></div></div>
+            <div className="v1-empty"><div><LoaderCircle className="spin" size={22}/><p>Loading your friends…</p></div></div>
           ) : friends.length === 0 ? (
             <div className="v1-empty">
               <div>
                 <UsersRound size={25} />
                 <h3>No friends yet.</h3>
                 <p>Accept a swap request to move someone from Explore into your Friends space.</p>
-                <a href="/requests" className="text-link">View requests <ArrowRight size={14} /></a>
+                <a href="/requests" className="text-link">View requests <ArrowRight size={14}/></a>
               </div>
             </div>
           ) : (
@@ -128,7 +128,7 @@ export function FriendsPage() {
                   <p>{friend.bio || 'SkillSwap community member'}</p>
                   <div className="friend-card-actions">
                     <a className="v1-button" href={`/people/${friend.id}`}>Profile <ArrowRight size={14} /></a>
-                    <a className="v1-button primary" href="/messages"><MessageCircle size={14} /> Message</a>
+                    <a className="v1-button primary" href={`/messages?friend=${encodeURIComponent(friend.id)}`}><MessageCircle size={14} /> Message</a>
                   </div>
                 </article>
               ))}
