@@ -1,5 +1,5 @@
-import { WhatsAppMessagesPage } from '@/components/whatsapp-messages-page'
+import { SkillSwapMessagesPage } from '@/components/skillshare-messages-page'
 
 export default function Page() {
-  return <WhatsAppMessagesPage />
+  return <SkillSwapMessagesPage />
 }
