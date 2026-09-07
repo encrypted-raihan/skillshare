@@ -1,5 +1,5 @@
-import { MessagesV2Page } from '@/components/messages-v2-page'
+import { MessagesV3Page } from '@/components/messages-v3-page'
 
 export default function Page() {
-  return <MessagesV2Page />
+  return <MessagesV3Page />
 }
