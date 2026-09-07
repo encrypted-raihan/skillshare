@@ -39,9 +39,7 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .item:active {
-    transform: scale(0.96);
-  }
+  .item:active { transform: scale(0.96); }
 
   .itemActive {
     color: #ffffff;
@@ -75,25 +73,15 @@
     line-height: 1;
   }
 
-  .itemActive .badge {
-    border-color: #173f31;
-  }
+  .itemActive .badge { border-color: #173f31; }
 
-  :global(.app-page-shell) {
-    padding-bottom: 86px;
+  :global(.app-page-shell),
+  :global(.explore-shell) {
+    padding-bottom: 92px;
   }
 }
 
 @media (max-width: 380px) {
-  .dock {
-    left: 8px;
-    right: 8px;
-    padding: 6px;
-    border-radius: 20px;
-  }
-
-  .item {
-    min-height: 52px;
-    font-size: 8px;
-  }
+  .dock { left: 8px; right: 8px; padding: 6px; border-radius: 20px; }
+  .item { min-height: 52px; font-size: 8px; }
 }
