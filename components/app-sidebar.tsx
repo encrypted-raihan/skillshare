@@ -52,9 +52,26 @@ export function AppSidebar() {
     router.replace('/')
   }
 
+  const messagesPage = pathname === '/messages'
+
   return (
     <>
-      <aside className="app-sidebar">
+      {messagesPage ? (
+        <style>{`
+          @media (min-width: 901px) {
+            .app-sidebar.app-sidebar-messages {
+              position: fixed !important;
+              top: 0 !important;
+              left: 0 !important;
+              bottom: 0 !important;
+              width: 220px !important;
+              height: 100vh !important;
+              z-index: 50 !important;
+            }
+          }
+        `}</style>
+      ) : null}
+      <aside className={`app-sidebar ${messagesPage ? 'app-sidebar-messages' : ''}`}>
         <a href="/explore" className="explore-logo" aria-label="SkillSwap home">
           <span className="explore-logo-mark"><span /><span /><span /><span /></span>
           <span><strong>SkillSwap</strong><small>Learn · Teach · Grow</small></span>
