@@ -4,6 +4,7 @@ import { Compass, LogOut, MessageCircle, Send, Settings, UserRound, CircleHelp, 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import styles from './mobile-bottom-nav.module.css'
 
 function initials(name: string) {
   return name.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'S'
@@ -52,28 +53,50 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="app-sidebar">
-      <a href="/explore" className="explore-logo" aria-label="SkillSwap home">
-        <span className="explore-logo-mark"><span /><span /><span /><span /></span>
-        <span><strong>SkillSwap</strong><small>Learn · Teach · Grow</small></span>
-      </a>
-      <nav className="explore-nav" aria-label="Main navigation">
-        {nav.map(({ href, label, icon: Icon, count }) => (
-          <a key={href} href={href} aria-current={pathname === href ? 'page' : undefined} className={`explore-nav-item ${pathname === href ? 'active' : ''}`}>
-            <Icon size={18} /><span>{label}</span><span className="nav-count">{count ? count : ''}</span>
-          </a>
-        ))}
+    <>
+      <aside className="app-sidebar">
+        <a href="/explore" className="explore-logo" aria-label="SkillSwap home">
+          <span className="explore-logo-mark"><span /><span /><span /><span /></span>
+          <span><strong>SkillSwap</strong><small>Learn · Teach · Grow</small></span>
+        </a>
+        <nav className="explore-nav" aria-label="Main navigation">
+          {nav.map(({ href, label, icon: Icon, count }) => (
+            <a key={href} href={href} aria-current={pathname === href ? 'page' : undefined} className={`explore-nav-item ${pathname === href ? 'active' : ''}`}>
+              <Icon size={18} /><span>{label}</span><span className="nav-count">{count ? count : ''}</span>
+            </a>
+          ))}
+        </nav>
+        <div className="sidebar-spacer" />
+        <nav className="explore-nav explore-nav-secondary" aria-label="Secondary navigation">
+          <a className="explore-nav-item" href="/help"><CircleHelp size={18} /><span>Help</span></a>
+          <a className="explore-nav-item" href="/settings"><Settings size={18} /><span>Settings</span></a>
+        </nav>
+        <div className="sidebar-profile">
+          <span className="avatar">{avatar ? <img src={avatar} alt="" /> : initials(name)}</span>
+          <span><strong>{name}</strong><small>Community member</small></span>
+          <button type="button" className="sidebar-logout" onClick={signOut} aria-label="Sign out"><LogOut size={15} /></button>
+        </div>
+      </aside>
+
+      <nav className={styles.dock} aria-label="Mobile navigation">
+        {nav.map(({ href, label, icon: Icon, count }) => {
+          const active = pathname === href || (href !== '/explore' && pathname.startsWith(`${href}/`))
+          return (
+            <a
+              key={href}
+              href={href}
+              aria-current={active ? 'page' : undefined}
+              className={`${styles.item} ${active ? styles.itemActive : ''}`}
+            >
+              <span className={styles.iconWrap}>
+                <Icon size={19} strokeWidth={active ? 2.4 : 2} />
+                {count ? <span className={styles.badge}>{count > 99 ? '99+' : count}</span> : null}
+              </span>
+              <span>{label}</span>
+            </a>
+          )
+        })}
       </nav>
-      <div className="sidebar-spacer" />
-      <nav className="explore-nav explore-nav-secondary" aria-label="Secondary navigation">
-        <a className="explore-nav-item" href="/help"><CircleHelp size={18} /><span>Help</span></a>
-        <a className="explore-nav-item" href="/settings"><Settings size={18} /><span>Settings</span></a>
-      </nav>
-      <div className="sidebar-profile">
-        <span className="avatar">{avatar ? <img src={avatar} alt="" /> : initials(name)}</span>
-        <span><strong>{name}</strong><small>Community member</small></span>
-        <button type="button" className="sidebar-logout" onClick={signOut} aria-label="Sign out"><LogOut size={15} /></button>
-      </div>
-    </aside>
+    </>
   )
 }
