@@ -1,5 +1,5 @@
-import { SkillSwapMessagesPage } from '@/components/skillshare-messages-page'
+import { MessagesV2Page } from '@/components/messages-v2-page'
 
 export default function Page() {
-  return <SkillSwapMessagesPage />
+  return <MessagesV2Page />
 }
