@@ -1,4 +1,7 @@
 import './globals.css'
+import './wa-a.css'
+import './wa-b.css'
+import './wa-mobile.css'
 import { StartupLoader } from '@/components/startup-loader'
 import type { Metadata } from 'next'
 
