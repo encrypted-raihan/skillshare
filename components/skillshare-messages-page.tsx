@@ -242,7 +242,6 @@ export function SkillSwapMessagesPage() {
                   <Avatar person={friend} />
                   <span style={styles.friendCopy}>
                     <strong>{friend.full_name}</strong>
-                    <small>SkillSwap friend</small>
                   </span>
                 </button>
               ))}
@@ -263,7 +262,6 @@ export function SkillSwapMessagesPage() {
                   <Avatar person={selectedFriend} />
                   <div style={styles.headerCopy}>
                     <strong>{selectedFriend.full_name}</strong>
-                    <small>SkillSwap friend</small>
                   </div>
                 </header>
 
