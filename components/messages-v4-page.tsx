@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Send, UserRound } from 'lucide-react'
+import { ArrowLeft, Send, UserRound } from 'lucide-react'
 import { AppSidebar } from '@/components/app-sidebar'
 import { createClient } from '@/lib/supabase/client'
 
@@ -94,20 +94,48 @@ export function MessagesV4Page() {
   const visible = friends.filter(f => f.full_name.toLowerCase().includes(search.toLowerCase().trim()))
 
   return <div style={s.page}>
+    <style>{`
+      .messages-v4-main { margin-left: 248px; }
+      .messages-v4-shell { grid-template-columns: 340px minmax(0, 1fr); }
+      .messages-v4-back { display: none; }
+      @media (max-width: 900px) {
+        .messages-v4-main { margin-left: 0 !important; padding: 24px 14px 92px !important; }
+        .messages-v4-heading { margin-bottom: 16px !important; }
+        .messages-v4-eyebrow { font-size: 9px !important; letter-spacing: 2.2px !important; }
+        .messages-v4-h1 { font-size: 42px !important; letter-spacing: -2px !important; margin-top: 6px !important; }
+        .messages-v4-sub { font-size: 13px !important; line-height: 1.45 !important; }
+        .messages-v4-shell { display: block !important; width: 100% !important; height: calc(100svh - 170px) !important; min-height: 0 !important; max-height: none !important; margin: 0 !important; border-radius: 20px !important; }
+        .messages-v4-list { display: flex !important; width: 100% !important; height: 100% !important; border-right: 0 !important; }
+        .messages-v4-chat { display: none !important; width: 100% !important; height: 100% !important; }
+        .messages-v4-shell.has-selection .messages-v4-list { display: none !important; }
+        .messages-v4-shell.has-selection .messages-v4-chat { display: flex !important; }
+        .messages-v4-list-head { padding: 16px !important; }
+        .messages-v4-h2 { font-size: 26px !important; margin-bottom: 12px !important; }
+        .messages-v4-friend-list { padding: 8px !important; }
+        .messages-v4-friend { min-height: 68px !important; padding: 10px 12px !important; }
+        .messages-v4-header { height: 64px !important; padding: 0 12px !important; }
+        .messages-v4-back { display: grid !important; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border: 0; border-radius: 10px; background: #eaf3ee; color: #14523e; }
+        .messages-v4-messages { padding: 16px !important; }
+        .messages-v4-bubble { max-width: 82% !important; font-size: 14px !important; }
+        .messages-v4-composer { padding: 10px !important; padding-bottom: calc(10px + env(safe-area-inset-bottom)) !important; gap: 8px !important; }
+        .messages-v4-input { min-width: 0 !important; height: 44px !important; }
+        .messages-v4-send { width: 44px !important; height: 44px !important; flex: 0 0 44px !important; }
+      }
+    `}</style>
     <AppSidebar />
-    <main style={s.main}>
-      <div style={s.heading}><div style={s.eyebrow}>YOUR CONNECTIONS</div><h1 style={s.h1}>Chats</h1><p style={s.sub}>Messaging is limited to accepted SkillSwap friends.</p></div>
+    <main className="messages-v4-main" style={s.main}>
+      <div className="messages-v4-heading" style={s.heading}><div className="messages-v4-eyebrow" style={s.eyebrow}>YOUR CONNECTIONS</div><h1 className="messages-v4-h1" style={s.h1}>Chats</h1><p className="messages-v4-sub" style={s.sub}>Messaging is limited to accepted SkillSwap friends.</p></div>
       {error && <div style={s.error}>{error}</div>}
-      <section style={s.shell}>
-        <aside style={s.list}>
-          <div style={s.listHead}><b style={s.label}>YOUR FRIENDS</b><h2 style={s.h2}>Chats <span style={s.badge}>{friends.length}</span></h2><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search friends" style={s.search} /></div>
-          <div style={s.friendList}>{loading ? <p style={s.empty}>Loading your friends…</p> : visible.length ? visible.map(friend => <button key={friend.id} onClick={() => void selectFriend(friend)} style={{ ...s.friend, ...(selected?.id === friend.id ? s.active : {}) }}><Avatar friend={friend} /><strong>{friend.full_name}</strong></button>) : <p style={s.empty}>{friends.length ? 'No matches.' : 'No accepted friends yet.'}</p>}</div>
+      <section className={`messages-v4-shell ${selected ? 'has-selection' : ''}`} style={s.shell}>
+        <aside className="messages-v4-list" style={s.list}>
+          <div className="messages-v4-list-head" style={s.listHead}><b style={s.label}>YOUR FRIENDS</b><h2 className="messages-v4-h2" style={s.h2}>Chats <span style={s.badge}>{friends.length}</span></h2><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search friends" style={s.search} /></div>
+          <div className="messages-v4-friend-list" style={s.friendList}>{loading ? <p style={s.empty}>Loading your friends…</p> : visible.length ? visible.map(friend => <button className="messages-v4-friend" key={friend.id} onClick={() => void selectFriend(friend)} style={{ ...s.friend, ...(selected?.id === friend.id ? s.active : {}) }}><Avatar friend={friend} /><strong>{friend.full_name}</strong></button>) : <p style={s.empty}>{friends.length ? 'No matches.' : 'No accepted friends yet.'}</p>}</div>
         </aside>
-        <section style={s.chat}>
+        <section className="messages-v4-chat" style={s.chat}>
           {!selected ? <div style={s.placeholder}><div style={s.icon}><UserRound size={28} /></div><h2>Select a friend</h2><p>Choose an accepted friend to start chatting.</p></div> : <>
-            <header style={s.header}><Avatar friend={selected} /><strong>{selected.full_name}</strong></header>
-            <div style={s.messages}>{messages.length ? messages.map(m => <div key={m.id} style={{ ...s.row, justifyContent: m.sender_id === userId ? 'flex-end' : 'flex-start' }}><div style={{ ...s.bubble, ...(m.sender_id === userId ? s.mine : s.theirs) }}><div>{m.body}</div><small style={s.time}>{clock(m.created_at)}</small></div></div>) : <div style={s.start}><h3>Start the conversation</h3><p>Say hello and begin your skill swap.</p></div>}</div>
-            <form onSubmit={e => { e.preventDefault(); void send() }} style={s.composer}><input value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" style={s.input} /><button type="submit" disabled={!text.trim()} style={s.send}><Send size={18} /></button></form>
+            <header className="messages-v4-header" style={s.header}><button className="messages-v4-back" type="button" onClick={() => { setSelected(null); setConversationId(''); setMessages([]) }} aria-label="Back to friends"><ArrowLeft size={18} /></button><Avatar friend={selected} /><strong>{selected.full_name}</strong></header>
+            <div className="messages-v4-messages" style={s.messages}>{messages.length ? messages.map(m => <div key={m.id} style={{ ...s.row, justifyContent: m.sender_id === userId ? 'flex-end' : 'flex-start' }}><div className="messages-v4-bubble" style={{ ...s.bubble, ...(m.sender_id === userId ? s.mine : s.theirs) }}><div>{m.body}</div><small style={s.time}>{clock(m.created_at)}</small></div></div>) : <div style={s.start}><h3>Start the conversation</h3><p>Say hello and begin your skill swap.</p></div>}</div>
+            <form className="messages-v4-composer" onSubmit={e => { e.preventDefault(); void send() }} style={s.composer}><input className="messages-v4-input" value={text} onChange={e => setText(e.target.value)} placeholder="Write a message…" style={s.input} /><button className="messages-v4-send" type="submit" disabled={!text.trim()} style={s.send}><Send size={18} /></button></form>
           </>}
         </section>
       </section>
