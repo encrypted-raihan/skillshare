@@ -69,6 +69,12 @@ export function AppSidebar() {
               z-index: 50 !important;
             }
           }
+          @media (max-width: 900px) {
+            .app-sidebar.app-sidebar-messages,
+            .app-sidebar {
+              display: none !important;
+            }
+          }
         `}</style>
       ) : null}
       <aside className={`app-sidebar ${messagesPage ? 'app-sidebar-messages' : ''}`}>
